@@ -44,7 +44,7 @@ class ChaincodeInvoker:
                 json.dumps(metadata)
             ]
             
-            result = await self.client.invoke_chaincode(
+            result = self.client.invoke_chaincode(
                 channel_name=channel_name,
                 chaincode_name="evidence-contract",
                 function_name="RegisterEvidence",
@@ -76,7 +76,7 @@ class ChaincodeInvoker:
         try:
             args = [event_id]
             
-            result = await self.client.query_chaincode(
+            result = self.client.query_chaincode(
                 channel_name=channel_name,
                 chaincode_name="evidence-contract",
                 function_name="QueryEvidence",
@@ -126,7 +126,7 @@ class ChaincodeInvoker:
                 json.dumps(custody_event)
             ]
             
-            result = await self.client.invoke_chaincode(
+            result = self.client.invoke_chaincode(
                 channel_name=channel_name,
                 chaincode_name="evidence-contract",
                 function_name="UpdateCustody",
@@ -163,7 +163,7 @@ class ChaincodeInvoker:
                 json.dumps(person_data)
             ]
             
-            result = await self.client.invoke_chaincode(
+            result = self.client.invoke_chaincode(
                 channel_name=channel_name,
                 chaincode_name="watchlist-contract",
                 function_name="EnrollPerson",
@@ -186,7 +186,7 @@ class ChaincodeInvoker:
         try:
             args = [person_id]
             
-            result = await self.client.query_chaincode(
+            result = self.client.query_chaincode(
                 channel_name=channel_name,
                 chaincode_name="watchlist-contract",
                 function_name="QueryPerson",
@@ -234,7 +234,7 @@ class ChaincodeInvoker:
                 json.dumps(update_data)
             ]
             
-            result = await self.client.invoke_chaincode(
+            result = self.client.invoke_chaincode(
                 channel_name=channel_name,
                 chaincode_name="fl-contract",
                 function_name="RegisterModelUpdate",
@@ -257,7 +257,7 @@ class ChaincodeInvoker:
         try:
             args = [str(epoch)]
             
-            result = await self.client.query_chaincode(
+            result = self.client.query_chaincode(
                 channel_name=channel_name,
                 chaincode_name="fl-contract",
                 function_name="QueryModelUpdate",
@@ -291,7 +291,7 @@ class ChaincodeInvoker:
         try:
             args = [event_id]
             
-            result = await self.client.query_chaincode(
+            result = self.client.query_chaincode(
                 channel_name=channel_name,
                 chaincode_name="evidence-contract",
                 function_name="GetEvidenceHistory",

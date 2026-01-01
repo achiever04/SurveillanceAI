@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from typing import Optional, Tuple
 import psutil
-import logging
+from loguru import logger  # ADD THIS
 
 logger = logging.getLogger(__name__)
 

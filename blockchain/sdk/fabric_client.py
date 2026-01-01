@@ -22,27 +22,17 @@ class FabricClient:
         """Load user credentials"""
         self.user = self.client.get_user(self.org_name, self.user_name)
         
-    async def invoke_chaincode(
+    def invoke_chaincode(  # Remove async
         self,
         channel_name: str,
         chaincode_name: str,
         function_name: str,
         args: list
     ) -> Dict[str, Any]:
-        """
-        Invoke chaincode function (write operation)
-        
-        Args:
-            channel_name: Channel name
-            chaincode_name: Chaincode ID
-            function_name: Function to invoke
-            args: Function arguments as list
-            
-        Returns:
-            Transaction response
-        """
+        """Invoke chaincode function (write operation)"""
         try:
-            response = await self.client.chaincode_invoke(
+            # Fabric SDK is synchronous, not async
+            response = self.client.chaincode_invoke(
                 requestor=self.user,
                 channel_name=channel_name,
                 peers=['peer0.org1.example.com'],
@@ -64,7 +54,7 @@ class FabricClient:
                 "error": str(e)
             }
     
-    async def query_chaincode(
+    async def query_chaincode(  # Remove async
         self,
         channel_name: str,
         chaincode_name: str,

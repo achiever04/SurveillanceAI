@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from datetime import datetime
-
+from loguru import logger
 from app.db.session import get_db
 from app.models.camera import Camera
 from app.models.detection import Detection  # ← ADD THIS LINE

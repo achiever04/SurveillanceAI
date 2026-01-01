@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import cv2
 import numpy as np
-
+from loguru import logger
 from app.models.detection import Detection
 from app.models.camera import Camera
 from app.services.evidence_service import EvidenceService

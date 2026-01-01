@@ -2,10 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { analyticsAPI } from '../services/api';
 import { Video, Users, AlertTriangle, CheckCircle } from 'lucide-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 const DashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Listen for real-time detections
+  useWebSocket('new_detection', (data) => {
+    console.log('New detection received:', data);
+    // Reload stats when new detection arrives
+    loadStats();
+  });
 
   useEffect(() => {
     loadStats();

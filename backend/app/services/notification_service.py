@@ -81,6 +81,15 @@ class NotificationService:
         }
         
         await self._broadcast(notification)
+
+    async def broadcast_detection(self, detection_data: Dict[str, Any]):
+        """Broadcast new detection to all connected clients"""
+        message = {
+            "type": "new_detection",
+            "data": detection_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        await self._broadcast(message)
     
     async def _broadcast(self, message: Dict[str, Any]):
         """Broadcast message to all connected WebSocket clients"""

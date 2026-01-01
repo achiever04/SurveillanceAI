@@ -9,6 +9,7 @@ from config.settings import settings
 from app.db.session import engine
 from app.db.base import Base
 from app.services.notification_service import notification_service
+from app.models import (user, camera, detection, watchlist, evidence, blockchain_receipt, fl_model)
 
 # Setup logging
 logger = setup_logging()

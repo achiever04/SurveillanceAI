@@ -12,6 +12,7 @@ from app.services.detection_service import DetectionService
 from app.services.watchlist_service import WatchlistService
 from app.services.notification_service import NotificationService
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.services.notification_service import notification_service
 
 class StreamProcessor:
     """Process camera frames for detections"""
@@ -100,14 +101,8 @@ class StreamProcessor:
         frame: np.ndarray,
         result: DetectionResult
     ):
-        """
-        Handle detection result
+        """Handle detection result"""
         
-        Args:
-            camera_id: Camera ID
-            frame: Original frame
-            result: Detection result
-        """
         # Determine detection type
         detection_type = self._determine_detection_type(result)
         
@@ -132,23 +127,38 @@ class StreamProcessor:
             "action": result.action,
             "matched_person_id": result.matched_person_id,
             "behavior_tags": result.metadata.get("behavior_tags"),
-            "pose_data": None  # Don't store full pose data (too large)
+            "pose_data": None
         }
         
-        # Save detection
-        detection = await self.detection_service.create_detection(
-            camera_id=camera_id,
-            detection_type=detection_type,
-            confidence=result.confidence,
-            frame_data=frame_bytes,
-            metadata=metadata
-        )
-        
-        logger.info(f"Detection saved: {detection.event_id} - {detection_type}")
-        
-        # Send alerts if watchlist match
-        if result.matched_person_id:
-            await self._send_watchlist_alert(detection, result)
+        try:
+            # Save detection
+            detection = await self.detection_service.create_detection(
+                camera_id=camera_id,
+                detection_type=detection_type,
+                confidence=result.confidence,
+                frame_data=frame_bytes,
+                metadata=metadata
+            )
+            
+            logger.info(f"Detection saved: {detection.event_id} - {detection_type}")
+
+            # Broadcast to WebSocket clients
+            await notification_service.broadcast_detection({
+                  "id": detection.id,
+                  "event_id": detection.event_id,
+                  "camera_id": detection.camera_id,
+                  "detection_type": detection_type,
+                  "confidence": result.confidence,
+                  "timestamp": detection.timestamp.isoformat(),
+                  "matched_person_id": result.matched_person_id
+            })
+            
+            # Send alerts if watchlist match
+            if result.matched_person_id:
+                await self._send_watchlist_alert(detection, result)
+                
+        except Exception as e:
+            logger.error(f"Failed to save detection: {e}")
     
     def _determine_detection_type(self, result: DetectionResult) -> str:
         """Determine detection type from result"""

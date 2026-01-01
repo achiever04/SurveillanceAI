@@ -6,6 +6,7 @@ from typing import Optional
 from pathlib import Path
 from loguru import logger
 from config.settings import settings
+from storage.ipfs.ipfs_manager import IPFSStorageManager
 
 class IPFSClient:
     """Client for interacting with IPFS"""
