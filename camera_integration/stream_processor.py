@@ -10,9 +10,8 @@ from loguru import logger
 from ai_engine.pipelines.detection_pipeline import DetectionPipeline, DetectionResult
 from app.services.detection_service import DetectionService
 from app.services.watchlist_service import WatchlistService
-from app.services.notification_service import NotificationService
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.notification_service import notification_service
+from sqlalchemy.ext.asyncio import AsyncSession
 
 class StreamProcessor:
     """Process camera frames for detections"""
@@ -28,7 +27,7 @@ class StreamProcessor:
         # Initialize services
         self.detection_service = DetectionService(db_session)
         self.watchlist_service = WatchlistService(db_session)
-        self.notification_service = NotificationService()
+        self.notification_service = notification_service
         
         # Initialize AI pipeline
         self.pipeline = DetectionPipeline(config)

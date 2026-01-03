@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     # --- ADDED MISSING FIELDS HERE ---
     PROCESS_EVERY_NTH_FRAME: int = 3
     VIDEO_RESOLUTION_WIDTH: int = 1280
-    VIDEO_RESOLUTION_HEIGHT: int = 720
+    VIDEO_RESOLUTION_HEIGHT: int = 1280
     
     # Feature Flags
     EMOTION_DETECTION_ENABLED: bool = True

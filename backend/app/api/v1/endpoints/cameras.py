@@ -5,6 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
+from app.models.detection import Detection
 from datetime import datetime
 from loguru import logger
 from app.db.session import get_db
@@ -312,3 +313,52 @@ async def stop_camera(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to stop camera: {str(e)}"
         )
+    
+@router.get("/{camera_id}/stream")
+async def stream_camera(
+    camera_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Stream camera feed (MJPEG)"""
+    from starlette.responses import StreamingResponse
+    import cv2
+    import asyncio
+    
+    result = await db.execute(
+        select(Camera).where(Camera.id == camera_id)
+    )
+    camera = result.scalar_one_or_none()
+    
+    if not camera:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Camera not found"
+        )
+    
+    async def generate_frames():
+        """Generate frames for MJPEG stream"""
+        # This is a simplified version - in production use proper camera manager
+        cap = cv2.VideoCapture(int(camera.source_url) if camera.source_url.isdigit() else camera.source_url)
+        
+        try:
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                # Encode frame as JPEG
+                _, buffer = cv2.imencode('.jpg', frame)
+                frame_bytes = buffer.tobytes()
+                
+                # Yield frame in MJPEG format
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                
+                await asyncio.sleep(0.1)  # ~10 FPS
+        finally:
+            cap.release()
+    
+    return StreamingResponse(
+        generate_frames(),
+        media_type="multipart/x-mixed-replace; boundary=frame"
+    )

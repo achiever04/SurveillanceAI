@@ -54,7 +54,7 @@ class FabricClient:
                 "error": str(e)
             }
     
-    async def query_chaincode(  # Remove async
+    async def query_chaincode(
         self,
         channel_name: str,
         chaincode_name: str,

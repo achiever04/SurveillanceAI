@@ -8,8 +8,6 @@ from typing import Optional, Tuple
 import psutil
 from loguru import logger  # ADD THIS
 
-logger = logging.getLogger(__name__)
-
 class CPUOptimizer:
     """Optimize inference for CPU-only execution"""
     

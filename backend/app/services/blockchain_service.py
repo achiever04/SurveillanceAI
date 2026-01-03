@@ -52,7 +52,7 @@ class BlockchainService:
             try:
                 # Real Fabric SDK invocation
                 # Remove await from synchronous Fabric SDK calls
-                result = self.chaincode_invoker.register_evidence(  # Remove await
+                result = await self.chaincode_invoker.register_evidence(
                     channel_name=self.channel_name,
                     event_id=event_id,
                     evidence_hash=evidence_receipt.get('clip_hash'),
@@ -99,7 +99,7 @@ class BlockchainService:
         
         if self.fabric_enabled and self.chaincode_invoker:
             try:
-                result = self.chaincode_invoker.enroll_watchlist_person(
+                result = await self.chaincode_invoker.enroll_watchlist_person(
                     channel_name=self.channel_name,
                     person_id=person_id,
                     person_data=enrollment_data

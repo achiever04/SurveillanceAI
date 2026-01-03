@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from app.models.user import User
 from app.core.security import get_password_hash
 from config.settings import settings
+from sqlalchemy import select
 
 async def create_admin():
     engine = create_async_engine(settings.DATABASE_URL)
@@ -19,9 +20,9 @@ async def create_admin():
         # Check if admin exists
         # FIX: Wrapped query in text()
         result = await session.execute(
-            text("SELECT * FROM users WHERE username = 'admin'")
+            select(User).where(User.username == "admin")
         )
-        if result.fetchone():
+        if result.scalar_one_or_none():
             print("Admin user already exists!")
             return
         
