@@ -14,6 +14,7 @@ from app.models.detection import Detection  # ← ADD THIS LINE
 from app.models.user import User
 from app.schemas.camera import CameraCreate, CameraUpdate, CameraResponse, CameraStats
 from app.api.deps import get_current_user, require_role
+import asyncio
 
 router = APIRouter()
 
@@ -241,8 +242,9 @@ async def start_camera(
         })
         
         # Register frame processing callback
-        async def process_frame_callback(cam_id: int, frame, frame_number: int):
-            await processor.process_frame(cam_id, frame, frame_number)
+        def process_frame_callback(cam_id: int, frame, frame_number: int):
+            # Create async task in event loop
+            asyncio.create_task(processor.process_frame(cam_id, frame, frame_number))
         
         start_camera.manager.register_callback(camera_id, process_frame_callback)
         
@@ -313,11 +315,34 @@ async def stop_camera(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to stop camera: {str(e)}"
         )
+
+from typing import Optional
+
+async def verify_stream_token(token: Optional[str] = Query(None)):
+    """Verify token for camera stream (since img tags can't use headers)"""
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No authentication token provided"
+        )
     
+    from app.core.security import decode_access_token
+    from app.models.user import User
+    
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token"
+        )
+    
+    return payload
+
 @router.get("/{camera_id}/stream")
 async def stream_camera(
     camera_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    token_payload: dict = Depends(verify_stream_token)
 ):
     """Stream camera feed (MJPEG)"""
     from starlette.responses import StreamingResponse
@@ -335,30 +360,56 @@ async def stream_camera(
             detail="Camera not found"
         )
     
-    async def generate_frames():
+    def generate_frames():
         """Generate frames for MJPEG stream"""
-        # This is a simplified version - in production use proper camera manager
-        cap = cv2.VideoCapture(int(camera.source_url) if camera.source_url.isdigit() else camera.source_url)
+        logger.info(f"=== STREAM STARTED for camera {camera_id} ===")
+        logger.info(f"Source: {camera.source_url}")
+        
+        source = int(camera.source_url) if camera.source_url.isdigit() else camera.source_url
+        logger.info(f"Parsed source: {source}, type: {type(source)}")
+        if isinstance(source, int):
+           cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+        else:
+           cap = cv2.VideoCapture(source)
+        logger.info(f"VideoCapture opened: {cap.isOpened()}")
+        
+        # Set properties for better performance
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_FPS, 15)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
         try:
             while True:
                 ret, frame = cap.read()
                 if not ret:
+                    logger.warning(f"Failed to read from camera {camera_id}")
                     break
                 
-                # Encode frame as JPEG
-                _, buffer = cv2.imencode('.jpg', frame)
+                # Resize for faster transmission
+                frame = cv2.resize(frame, (640, 480))
+                
+                # Encode as JPEG
+                ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                if not ret:
+                    continue
+                    
                 frame_bytes = buffer.tobytes()
                 
-                # Yield frame in MJPEG format
+                # Yield in MJPEG format
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                
-                await asyncio.sleep(0.1)  # ~10 FPS
+                       
         finally:
             cap.release()
+            logger.info(f"Camera {camera_id} stream closed")
     
     return StreamingResponse(
         generate_frames(),
-        media_type="multipart/x-mixed-replace; boundary=frame"
+        media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+        }
     )

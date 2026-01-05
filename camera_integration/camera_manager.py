@@ -42,8 +42,8 @@ class CameraManager:
             True if successful, False otherwise
         """
         try:
-            # Parse source
-            if isinstance(config.source, str) and config.source.isdigit():
+            # Parse source - handle webcam indices properly
+            if config.source.strip().isdigit():
                 source = int(config.source)
             else:
                 source = config.source
